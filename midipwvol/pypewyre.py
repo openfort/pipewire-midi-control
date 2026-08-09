@@ -695,7 +695,7 @@ def set_volume_absolute(state:PWState, id:int, volume:float|list|dict=None, *, m
             "props": new_props,
             "save": True,
         }
-        pprint(new_value)
+        #pprint(new_value)
         subprocess.run(
             ["pw-cli", "set-param", str(dev_id), "Route", json.dumps(new_value)],
             stdout=subprocess.DEVNULL,

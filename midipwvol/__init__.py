@@ -3,7 +3,7 @@ import sys
 from queue import Queue
 from threading import Thread
 
-from .ddcutil_service import DdcutilInterface
+from .ddcutil_service import DdcutilService
 from .pypewyre import PWDump, PWState, PWQueryResult
 
 # pip install xdg-base-dirs
@@ -23,10 +23,33 @@ def pw_dump_producer(q:Queue):
         q.put(("pw", obj))
 
 
-def midi_producer(ports, q:Queue):
+def midi_producer(ports, q: Queue):
     # This function runs in a separate thread.
     for (port, msg) in mido.ports.multi_receive(ports, yield_ports=True, block=True):
-        q.put(("midi", port, msg))
+        # Only process deduplication for control changes
+        if msg.type == 'control_change':
+            channel = msg.channel
+            control = msg.control
+
+            # Remove all older messages with same channel and control number
+            temp = []
+            while not q.empty():
+                try:
+                    item = q.get_nowait()
+                    # Keep items that aren't CC with same channel/control
+                    if not (item[0] == "midi" and
+                            item[2].type == 'control_change' and
+                            item[2].channel == channel and
+                            item[2].control == control):
+                        temp.append(item)
+                except:
+                    break
+
+            # Re-add the kept items
+            for item in temp:
+                q.put(item)
+
+        q.put(("midi", port, msg))  # Add the new message
 
 
 def main():
@@ -60,7 +83,7 @@ def main():
 
     # -- ddcutil-service --
     # Initializing the proxy object:
-    ddc = DdcutilInterface(service_name="com.ddcutil.DdcutilService", object_path="/com/ddcutil/DdcutilObject")
+    ddc = DdcutilService()
 
     pw_thread.start()
     midi_thread.start()

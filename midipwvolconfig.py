@@ -12,8 +12,16 @@ def handle_midi_message(port, message, pw, ddc):
     elif message.is_cc(1):
         subprocess.run(['playerctl', '--player=spotify', 'volume', f'{(message.value/127):.2}'])
         #pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(message.value / 127)
+    elif message.type == 'note_on' and message.note == 8:
+        pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(volume=None,mute=True)
+    elif message.type == 'note_off' and message.note == 8:
+        pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(volume=None,mute=False)
     elif message.is_cc(3):
         pw(type="Node", node_name="Brave", is_audio=True, is_source=True).set_volume(message.value / 127)
+    elif message.type == 'note_on' and message.note == 10:
+        pw(type="Node", node_name="Brave", is_audio=True, is_source=True).set_volume(volume=None,mute=True)
+    elif message.type == 'note_off' and message.note == 10:
+        pw(type="Node", node_name="Brave", is_audio=True, is_source=True).set_volume(volume=None,mute=False)
 
     # Audio Devices
     elif message.is_cc(8):

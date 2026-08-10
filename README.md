@@ -1,22 +1,20 @@
-# midi-pipewire-volume 🎚🎛️ → 🔈🔉🔊
+# pipewire-midi-control 🎚🎛️ → 🔈🔉🔊
 
-Tool to map MIDI CC (Control Change) messages to the audio volume of individual PipeWire nodes and devices.
+Tool to map MIDI messages to the audio volume of individual PipeWire nodes and devices.
 
-Current status: Early development, not very polished. But I'm already using it daily.
+Current status: Early development, not very polished. But I'm already using it daily with Behringer X-TOUCH MINI.
 
 Goals:
 
 * Use MIDI CC messages to change individual volume levels in PipeWire.
     * Should support any device/node/port/whatever-it-is-called.
-    * Should also support applications (because, why not?).
-    * Should support individula channels (e.g. separate controls for left/right channels).
+    * Should also support applications.
 * Also use them to change the display brightness.
     * Using `ddcutil` for external displays.
-    * Maybe someday using the backlight settings of laptops.
 * Also allow changing the default audio device (both for playback and for recording).
 * Also allow changing the profile of an audio device.
 * Also allow arbitrary commands.
-* Any MIDI message should work. CC messages are the most obvious, but note on/off could also be implemented.
+* Any MIDI message should work. CC messages, note on/off.
 
 ## TODO
 
@@ -24,49 +22,43 @@ Goals:
     * Explain what this tool does, what it does not, and what are the alternative tools.
     * Step-by-step installation instructions.
     * Some configuration examples.
-    * Video showing a live recording of this tool working.
 * [x] Write a nice `set_volume` function that...
     * Accepts absolute amounts.
-    * ~~Uses percent values (i.e. from 0 to 100), because adding `1` is easier and more precise than adding `0.01`~~.
     * Allows setting `mute`.
     * Allows per-channel changes.
 * [ ] Write a nice `change_volume` function that...
     * Accepts relative amounts.
     * Has a maximum limit for relative amounts.
-    * ~~Uses percent values (i.e. from 0 to 100), because adding `1` is easier and more precise than adding `0.01`.~~
     * Allows toggling `mute`.
     * Allows per-channel changes.
+* [ ] Get the focused Window on the Desktop.
+    * Change volume of focused Window.
+    * Assign focused Window to midi controls.
 * [x] Hard-code changing the volume from a MIDI CC event.
 * [ ] Write a nice function to change the default input/output device.
 * [ ] Write a nice function to change the profile of a device.
 * [ ] Allow changing the volume/mute of the default device.
 * [ ] Let the user (i.e. the config file) decide if a MIDI device should be auto-connected to this tool.
 * [ ] Auto-connect MIDI devices when they get hot-plugged.
+* [ ] Filter for MIDI channel to allow mulitple MIDI devices.
 * [ ] Send values back to the MIDI device
     * [ ] Send volume changes. (Requires figuring out how to detect volume changes.)
     * [ ] Send brightness/contrast VDU changes. (Requires receiving signals from ddcutil-session, not sure if it is possible.
     * [ ] Buy or borrow a MIDI device that I can test. Maybe I should just connect to my Akai Play Mini and map it to one of the knobs.
-* [ ] Write some wrapper code to auto-reconnect to D-Bus when needed. (`sd_bus_internals.SdBusUnmappedMessageError` exception)
-* [ ] Allow changing the backlight. Can be tricky, as I don't have a laptop to test it on.
-    * [ ] Change the laptop backlight.
-    * [ ] Change the keyboard backlight.
-    * [ ] Maybe just a convenience function to write to an arbitrary file. That would allow changing the LED color of a connected PS4 controller.
 * [ ] Write a lot of docstrings. Documentation is important.
 * [ ] Write a lot of unit tests, possibly as doctests.
-* [ ] Apply a Python linter/formatter such as Black or Ruff.
 * [x] Figure out a nice configuration format. Or maybe just a simple API so that users can write their own code.
-* [x] Write a function to send updates to `ddcutil-service`.
-* [ ] Allow toggling/setting/resetting the "Manually block display from sleeping". It's an option available on KDE, I'm not sure if applications can access that.
+* [x] Write a function to send updates to `ddcutil-cli`.
 * [ ] Write a help function. Well, just use `argparse`. But write a parameter that prints out:
     * All the currently available MIDI devices/ports.
     * All the audio devices/nodes/etc.
     * Any significant changes detected.
     * Incoming MIDI messages.
     * Heck, this is just a `--verbose` mode!
-* [ ] Write a `--dry-run` parameter, that won't change the volume or the brightness.
 
 ## Further links
 
+* forked from [denilsonsa/midi-pipewire-volume](https://github.com/denilsonsa/midi-pipewire-volume)
 * [PipeWire](https://pipewire.org/)
     * [How to change the volume in PipeWire](https://gitlab.freedesktop.org/pipewire/pipewire/-/wikis/Migrate-PulseAudio#sinksource-port-volumemuteport-latency) (TL;DR: it's complicated)
     * [Desire for official PipeWire Python bindings](https://gitlab.freedesktop.org/pipewire/pipewire/-/issues/1654)

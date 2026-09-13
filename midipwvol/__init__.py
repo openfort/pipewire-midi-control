@@ -99,7 +99,7 @@ def main():
                 pw_state.update(objs)
                 # print("state size:", len(pw_state.db))
             case ("midi", port, msg):
-                print("midi from", port, " => ", msg)
+                #print("midi from", port, " => ", msg)
                 midipwvolconfig.handle_midi_message(port=port, message=msg, pw=pw, ddc=ddc)
             case _:
                 raise ValueError("Invalid item in the main_queue: {!r}".format(item))

@@ -1,66 +1,77 @@
-def lerp(value, a, b, x, y):
-    """Linear interpolation of value from the a~b range to the x~y range.
+import subprocess
+import json
+import re
+import os
 
-    >>> lerp(0, 0.0, 1.0, 3.0, 6.0)
-    3.0
-    >>> lerp(0.5, 0.0, 1.0, 3.0, 6.0)
-    4.5
-    >>> lerp(75, 50, 100, 7, 9)
-    8.0
-    """
-    return x + (y - x) * (value - a) / (b - a)
+NODE_FILE = 'node_names.json'
 
+### Helper Functions
+## read, write json for permanent config
+# Load existing data
+def load_nodes():
+    if os.path.exists(NODE_FILE):
+        with open(NODE_FILE, 'r') as f:
+            return json.load(f)
+    return {}
 
-def interp(value:int|float, pairs:list[tuple]):
-    """Linear interpolation of one value against a list of values.
+# Save data to file
+def save_nodes(data):
+    with open(NODE_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
 
-    Inspired by numpy.interp().
+# Add or update a node by channel number
+def add_node(channel, node_name):
+    data = load_nodes()
+    data[str(channel)] = node_name
+    save_nodes(data)
 
-    >>> func = [(0, 0.0), (25, 0.0), (75, 1.0), (100, 1.0)]
-    >>> interp(0, func)
-    0.0
-    >>> interp(20, func)
-    0.0
-    >>> interp(25, func)
-    0.0
-    >>> interp(30, func)
-    0.1
-    >>> interp(35, func)
-    0.2
-    >>> interp(45, func)
-    0.4
-    >>> interp(50, func)
-    0.5
-    >>> interp(55, func)
-    0.6
-    >>> interp(70, func)
-    0.9
-    >>> interp(75, func)
-    1.0
-    >>> interp(76, func)
-    1.0
-    >>> interp(99, func)
-    1.0
-    >>> interp(100, func)
-    1.0
+# Get a node by channel number
+def get_node(channel):
+    data = load_nodes()
+    return data.get(str(channel))
 
-    How should out-of-bounds behave?
-    * Repeat the boundary value as a constant.
-    * LERP against the first or the last segment.
-    * Throw a ValueError.
-    >>> interp(-1, func)
-    ValueError: ...
-    >>> interp(101, func)
-    ValueError: ...
+# Remove a node by channel
+def remove_node(channel):
+    data = load_nodes()
+    if str(channel) in data:
+        del data[str(channel)]
+        save_nodes(data)
 
-    The first element of each pair should be in increasing order,
-    but this is not checked.
-    """
-    for ((a, x), (b, y)) in zip(pairs[:-1], pairs[1:]):
-        if value == a:
-            return x
-        elif value == b:
-            return y
-        elif a <= value <= b:
-            return lerp(value, a, b, x, y)
-    raise ValueError("value out of bounds of pairs")
+def get_child_pid(parent):
+    result = subprocess.run(['pstree', '-p', '-T', '-A', str(parent)],
+                        capture_output=True, text=True).stdout
+
+    #print(result)
+    result = re.sub(r'^[^-]*', '', result)
+    lines = result.strip().split('\n')
+
+    first_layer_pids = [parent]
+    for line in lines:
+        line = line.replace(' ', '')  # Remove all whitespace
+        if line.startswith('-+-') or line.startswith('|-') or line.startswith('`-'):
+            match = re.search(r'\((\d+)\)', line)
+            if match:
+                first_layer_pids.append(match.group(1))
+    return first_layer_pids
+
+def get_node_name():
+    result = (subprocess.run(['qdbus', 'org.kde.KWin', '/KWin', 'org.kde.KWin.queryWindowInfo'], capture_output=True, text=True)).stdout.strip()
+    # Parse the output to find pid
+    for line in result.split('\n'):
+        if 'pid' in line:
+            pid = line.split(' ')[1]
+            #print(pid)
+            result = subprocess.run(['pw-dump'], capture_output=True, text=True)
+            objects = json.loads(result.stdout)
+
+            for pid in get_child_pid(pid):
+                #print(pid)
+                for obj in objects:
+                    props = obj.get('info', {}).get('props', {})
+                    obj_pid = props.get('application.process.id')
+                    if obj_pid is not None:
+                        if int(obj_pid) == int(pid):
+                            node_name = obj['info']['props'].get('node.name')
+                            if node_name is not None:
+                                return node_name
+    return None

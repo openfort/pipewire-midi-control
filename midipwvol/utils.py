@@ -1,4 +1,5 @@
 import subprocess
+import mido
 import json
 import re
 import os
@@ -6,6 +7,40 @@ import os
 NODE_FILE = 'node_names.json'
 
 ### Helper Functions
+
+def send_msg(name, command, note, velocity=100):
+    output = mido.open_output(name)
+    msg = mido.Message(command, note=note, velocity=velocity)
+    output.send(msg)
+
+def start_app(name):
+    p1 = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
+    p2 = subprocess.run(["grep", name, '-i'], stdin=p1.stdout, capture_output=True, text=True)
+    p1.stdout.close()
+    app_runnig = p2.stdout.strip().split('\n')[0]
+
+    if app_runnig:
+        return True
+
+    p1 = subprocess.Popen(['ls', '/usr/share/applications/'], stdout=subprocess.PIPE)
+    p2 = subprocess.run(["grep", name, '-i'], stdin=p1.stdout, capture_output=True, text=True)
+    p1.stdout.close()
+    launcher_file = p2.stdout.strip().split('\n')[0]
+
+    if launcher_file:
+        p1 = subprocess.Popen(['cat', f'/usr/share/applications/{launcher_file}'], stdout=subprocess.PIPE)
+        p2 = subprocess.run(["grep", 'exec=', '-i'], stdin=p1.stdout, capture_output=True, text=True)
+        p1.stdout.close()
+        result = p2.stdout.strip().split('\n')[0].split('=')[1].split(' ')[0]
+
+        subprocess.Popen([result],
+                 stdout=subprocess.DEVNULL,
+                 stderr=subprocess.DEVNULL,
+                 start_new_session=True)
+    else:
+        result = 'no result'
+    return result
+
 ## read, write json for permanent config
 # Load existing data
 def load_nodes():

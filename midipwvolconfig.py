@@ -1,7 +1,7 @@
 # Custom user configuration.
 # Should be located at ~/.config/midipwvol/midipwvolconfig.py
 
-from midipwvol.utils import load_nodes, save_nodes, add_node, get_node, remove_node, get_child_pid, get_node_name
+from midipwvol.utils import load_nodes, save_nodes, add_node, get_node, remove_node, get_child_pid, get_node_name, start_app, send_msg
 import subprocess
 import json
 
@@ -23,9 +23,11 @@ def handle_midi_message(port, message, pw, ddc):
         subprocess.run(['playerctl', '--player=spotify', 'volume', f'{(message.value/127):.2}'])
         #pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(message.value / 127)
     elif message.type == 'note_on' and message.note == 8:
-        pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(volume=None,mute=True)
+        if start_app('spotify') == True:
+            pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(volume=None,mute=True)
     elif message.type == 'note_off' and message.note == 8:
-        pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(volume=None,mute=False)
+        if start_app('spotify') == True:
+            pw(type="Node", node_name="spotify", is_audio=True, is_source=True).set_volume(volume=None,mute=False)
 
     # others dynamically
     elif message.type == 'note_on' and message.note < 8 and message.note > 1:
@@ -41,10 +43,12 @@ def handle_midi_message(port, message, pw, ddc):
             pw(type="Node", node_name=node_name, is_audio=True, is_source=True).set_volume(message.value / 127)
     elif message.type == 'note_on' and message.note >= 9 and message.note <= 15:
         node_name = get_node(message.note-7)
-        pw(type="Node", node_name=node_name, is_audio=True, is_source=True).set_volume(volume=None,mute=True)
+        if start_app(node_name) == True:
+            pw(type="Node", node_name=node_name, is_audio=True, is_source=True).set_volume(volume=None,mute=True)
     elif message.type == 'note_off' and message.note >= 9 and message.note <= 15:
         node_name = get_node(message.note-7)
-        pw(type="Node", node_name=node_name, is_audio=True, is_source=True).set_volume(volume=None,mute=False)
+        if start_app(node_name) == True:
+            pw(type="Node", node_name=node_name, is_audio=True, is_source=True).set_volume(volume=None,mute=False)
 
     ## Media Keys
     elif message.type == 'note_on' and message.note == 22:
